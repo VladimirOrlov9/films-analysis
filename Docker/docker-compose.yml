@@ -160,7 +160,7 @@ services:
     restart: always
 
   spark-master:
-    image: cluster-apache-spark:3.0.2
+    image: "cluster-apache-spark"
     container_name: spark-master
     build:
       context: .
@@ -180,7 +180,7 @@ services:
       - SPARK_LOCAL_IP=spark-master
       - SPARK_WORKLOAD=master
   spark-worker-a:
-    image: cluster-apache-spark:3.0.2
+    image: "cluster-apache-spark"
     container_name: spark-worker-a
     build:
       context: .
@@ -204,7 +204,7 @@ services:
        - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
   spark-worker-b:
-    image: cluster-apache-spark:3.0.2
+    image: "cluster-apache-spark"
     container_name: spark-worker-b
     build:
       context: .
