@@ -37,7 +37,6 @@ public class CollectionApplication {
 	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
 		return args -> {
 
-
 			for (int i = 1; i <= 500; i++) {
 				Page quote = restTemplate.getForObject(
 						"https://api.themoviedb.org/3/discover/movie?api_key" +
@@ -55,6 +54,8 @@ public class CollectionApplication {
 					}
 				}
 			}
+
+			System.exit(0);
 		};
 	}
 }
