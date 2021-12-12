@@ -1,4 +1,5 @@
 #!/bin/bash
+
 function test_systems_available {
   COUNTER=0
   until $(curl --output /dev/null --silent --head --fail http://$1:$2); do
