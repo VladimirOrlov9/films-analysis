@@ -1,6 +1,7 @@
 version: '3.6'
 networks:
   localnet:
+    driver: bridge
     attachable: true
 
 services:
@@ -177,6 +178,7 @@ services:
     ports:
       - "8092:8080"
       - "7077:7077"
+      - "4040:4040"
     volumes:
        - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
@@ -193,7 +195,6 @@ services:
       - localnet
     ports:
       - "8093:8080"
-      - "7000:7000"
     depends_on:
       - spark-master
     environment:
@@ -217,7 +218,6 @@ services:
       - localnet
     ports:
       - "8094:8080"
-      - "7001:7000"
     depends_on:
       - spark-master
     environment:

@@ -7,7 +7,7 @@ RUN update-alternatives --install "/usr/bin/python" "python" "$(which python3)" 
 
 # Fix the value of PYTHONHASHSEED
 # Note: this is needed when you use Python 3.3 or greater
-ENV SPARK_VERSION=3.0.2 \
+ENV SPARK_VERSION=3.2.0 \
 HADOOP_VERSION=3.2 \
 SPARK_HOME=/opt/spark \
 PYTHONHASHSEED=1
@@ -16,7 +16,6 @@ RUN wget --no-verbose -O apache-spark.tgz "https://archive.apache.org/dist/spark
 && mkdir -p /opt/spark \
 && tar -xf apache-spark.tgz -C /opt/spark --strip-components=1 \
 && rm apache-spark.tgz
-
 
 FROM builder as apache-spark
 
@@ -30,7 +29,8 @@ SPARK_WORKER_LOG=/opt/spark/logs/spark-worker.out \
 SPARK_WORKER_WEBUI_PORT=8080 \
 SPARK_WORKER_PORT=7000 \
 SPARK_MASTER="spark://spark-master:7077" \
-SPARK_WORKLOAD="master"
+SPARK_WORKLOAD="master" \
+SPARK_MASTER_HOST="spark-master"
 
 EXPOSE 8080 7077 7000
 
