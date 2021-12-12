@@ -1,0 +1,2 @@
+FROM mongo:latest
+COPY ./init-mongo/config-replica.js ./init-mongo/config-data.js /

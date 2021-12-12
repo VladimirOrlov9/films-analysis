@@ -1,0 +1,232 @@
+version: '3.6'
+networks:
+  localnet:
+    attachable: true
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.1.2
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - localnet
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafkaserver:
+    image: confluentinc/cp-enterprise-kafka:5.1.2
+    hostname: kafkaserver
+    container_name: kafkaserver
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+    networks:
+      - localnet
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_CLUSTER_ID: kafkaserver
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafkaserver:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafkaserver:29092
+      CONFLUENT_METRICS_REPORTER_ZOOKEEPER_CONNECT: zookeeper:2181
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    depends_on:
+      - zookeeper
+      - kafkaserver
+    networks:
+      - localnet
+    ports:
+      - "8090:8080"
+    restart: always
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafkaserver
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafkaserver:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  connect:
+    image: confluentinc/cp-kafka-connect:5.1.2
+    hostname: connect
+    container_name: connect
+    restart: unless-stopped
+    depends_on:
+      - zookeeper
+      - kafkaserver
+    ports:
+      - "8083:8083"
+    networks:
+      - localnet
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'kafkaserver:29092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+      CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR,com.mongodb.kafka=DEBUG"
+      CONNECT_PLUGIN_PATH: /usr/share/confluent-hub-components
+      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      # Assumes image is based on confluentinc/kafka-connect-datagen:latest which is pulling 5.2.2 Connect image
+      CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-5.2.2.jar
+      CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
+      CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
+    command: "bash -c 'if [ ! -d /usr/share/confluent-hub-components/confluentinc-kafka-connect-datagen ]; then echo \"WARNING: Did not find directory for kafka-connect-datagen (did you remember to run: docker-compose up -d --build ?)\"; fi ; /etc/confluent/docker/run'"
+    volumes:
+      - ./kafka/jars:/usr/share/confluent-hub-components/kafka-connect-mongodb
+
+# MongoDB
+  mongo1:
+    image: mongo
+    container_name: mongo1
+    command: --replSet rs0
+    depends_on:
+      - connect
+    networks:
+      - localnet
+    ports:
+      - "27017:27017"
+    restart: always
+
+# MongoDB setup
+  mongo1-setup:
+    image: "mongo-setup"
+    container_name: mongo1-setup
+    build:
+      context: .
+      dockerfile: Dockerfile-Mongo
+    depends_on:
+      - mongo1
+    networks:
+      - localnet
+    entrypoint:
+      [
+        "bash",
+        "-c",
+        "sleep 10 && mongo --host mongodb://mongo1:27017 config-replica.js && sleep 10 && mongo --host mongodb://mongo1:27017 config-data.js",
+      ]
+    restart: "no"
+
+# MongoDB Express for GUI
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    container_name: mongo-express
+    networks:
+      - localnet
+    depends_on:
+      - mongo1
+    ports:
+      - "8091:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: "mongodb://mongo1:27017/?replicaSet=rs0"
+
+# MongoDB shell with curl
+  shell:
+    image: "mongo-shell"
+    container_name: shell
+    build:
+      context: .
+      dockerfile: Dockerfile-Shell
+    command: bash -c "./initialize-container.sh && tail -f /dev/null"
+    depends_on:
+      - zookeeper
+      - kafkaserver
+      - connect
+      - mongo1
+      - mongo-express
+    networks:
+      - localnet
+    restart: always
+
+  spark-master:
+    image: "cluster-apache-spark"
+    container_name: spark-master
+    build:
+      context: .
+      dockerfile: Dockerfile-Spark
+    depends_on:
+      - mongo1
+      - kafkaserver
+    networks:
+      - localnet
+    ports:
+      - "8092:8080"
+      - "7077:7077"
+    volumes:
+       - ./apps:/opt/spark-apps
+       - ./data:/opt/spark-data
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_WORKLOAD=master
+  spark-worker-a:
+    image: "cluster-apache-spark"
+    container_name: spark-worker-a
+    build:
+      context: .
+      dockerfile: Dockerfile-Spark
+    networks:
+      - localnet
+    ports:
+      - "8093:8080"
+      - "7000:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    volumes:
+       - ./apps:/opt/spark-apps
+       - ./data:/opt/spark-data
+  spark-worker-b:
+    image: "cluster-apache-spark"
+    container_name: spark-worker-b
+    build:
+      context: .
+      dockerfile: Dockerfile-Spark
+    networks:
+      - localnet
+    ports:
+      - "8094:8080"
+      - "7001:7000"
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    volumes:
+        - ./apps:/opt/spark-apps
+        - ./data:/opt/spark-data
