@@ -62,7 +62,7 @@ object FilmsAnalysis1 {
     }
 
     val layout = Layout(
-      title = "1",
+      title = "Распределение оценок по языкам оригинала",
       annotations = annotations
     )
 
@@ -81,7 +81,7 @@ object FilmsAnalysis1 {
     }
 
     val layout1 = Layout(
-      title = "1",
+      title = "Распределение количества фильмов по языкам оригинала",
       annotations = annotations1
     )
 
