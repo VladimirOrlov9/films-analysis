@@ -138,6 +138,7 @@ services:
     networks:
       - localnet
     depends_on:
+      - mongo1-setup
       - mongo1
     ports:
       - "8091:8081"
