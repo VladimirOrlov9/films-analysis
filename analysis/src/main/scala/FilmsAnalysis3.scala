@@ -47,7 +47,7 @@ object FilmsAnalysis3 {
       .select("count").map(f=>f.getLong(0)).collect.toList
 
 
-    val data = Seq(Bar(xValue, yValue, name = "Количество фильмов"))
+    val data = Seq(Bar(xValue, yValue))
 
     val annotations = xValue.zip(yValue).map {
       case (x, y) =>
@@ -64,9 +64,9 @@ object FilmsAnalysis3 {
     val layout = Layout()
       .withTitle("Разброс фильмов по жанрам")
       .withAnnotations(annotations)
-      .withXaxis(Axis(tickangle = 90))
+      .withXaxis(Axis(tickangle = 90, title = "Жанр"))
+      .withYaxis(Axis(title = "Количество фильмов"))
       .withHeight(600)
-      .withShowlegend(true)
 
     Plotly.plot("./Docker/data/analysis_3-1.html", data, layout)
 
@@ -79,7 +79,7 @@ object FilmsAnalysis3 {
       .select("avg").map(f=>decForm.format(f.getDouble(0)).replace(",", ".")).collect.toList
 
 
-    val data1 = Seq(Bar(xValue1, yValue1, name = "Средняя популярность"))
+    val data1 = Seq(Bar(xValue1, yValue1))
 
     val annotations1 = xValue1.zip(yValue1).map {
       case (x, y) =>
@@ -96,9 +96,9 @@ object FilmsAnalysis3 {
     val layout1 = Layout()
       .withTitle("Популярность фильмов по жанрам")
       .withAnnotations(annotations1)
-      .withXaxis(Axis(tickangle = 90))
+      .withXaxis(Axis(tickangle = 90, title = "Жанр"))
+      .withYaxis(Axis(title = "Средняя популярность"))
       .withHeight(600)
-      .withShowlegend(true)
 
     Plotly.plot("./Docker/data/analysis_3-2.html", data1, layout1)
   }
