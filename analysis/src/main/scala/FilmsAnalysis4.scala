@@ -33,15 +33,10 @@ object FilmsAnalysis4 {
       .load()
 
     val streamingSelectDF = streamingInputDF
-//      .withColumn("exploded", explode($"spoken_languages"))
-//      .select($"original_title", $"budget", $"exploded.english_name".alias("spoken_languages"))
       .withColumn("count", size($"spoken_languages"))
       .groupBy("count")
       .agg(avg("budget").as("avg"))
       .orderBy("count")
-//      .show()
-
-    val decForm = new DecimalFormat("#0.0")
 
     val xValue = streamingSelectDF.select("count")
       .map(f=>f.getInt(0)).collect.toList
@@ -67,7 +62,7 @@ object FilmsAnalysis4 {
     }
 
     val layout = Layout()
-      .withTitle("Бюджет фильмов, в зависимости от количества языков, на которые он переведен")
+      .withTitle("Средний бюджет фильмов, в зависимости от количества языков, на которые он переведен")
       .withAnnotations(annotations)
       .withXaxis(Axis(tickmode = TickMode.Array, showticklabels = true,
         title = "Количество языков, на которые переведен фильм"))
