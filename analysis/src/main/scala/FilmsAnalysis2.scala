@@ -33,6 +33,7 @@ object FilmsAnalysis2 {
       .load()
 
     val streamingSelectDF = streamingInputDF
+      .where("status == \"Released\"")
       .selectExpr("*", "cast(left(release_date, 3) as int) as year")
       .groupBy("year")
       .agg(count("year").as("count"),
@@ -80,10 +81,10 @@ object FilmsAnalysis2 {
 
 
     val layout = Layout()
-      .withTitle("Средняя оценка фильмов по годам выпуска")
+      .withTitle("Средняя оценка фильмов и их количество по годам выпуска")
       .withAnnotations(annotations)
       .withBarmode(BarMode.Group)
-      .withXaxis(Axis(tickangle = 90))
+      .withXaxis(Axis(tickangle = 45).withTitle("Год выпуска"))
       .withYaxis(Axis().withShowticklabels(false))
       .withHeight(600)
 

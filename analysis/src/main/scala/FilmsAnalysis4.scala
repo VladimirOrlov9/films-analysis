@@ -33,6 +33,7 @@ object FilmsAnalysis4 {
       .load()
 
     val streamingSelectDF = streamingInputDF
+      .where("status == \"Released\"")
       .withColumn("count", size($"spoken_languages"))
       .groupBy("count")
       .agg(avg("budget").as("avg"))

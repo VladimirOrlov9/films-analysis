@@ -33,6 +33,7 @@ object FilmsAnalysis6 {
       .load()
 
     val streamingSelectDF = streamingInputDF
+      .where("status == \"Released\"")
       .selectExpr("*", "cast(left(vote_average, 1) as int) as vote_int")
       .groupBy("vote_int")
       .agg(avg("popularity").as("avg"))

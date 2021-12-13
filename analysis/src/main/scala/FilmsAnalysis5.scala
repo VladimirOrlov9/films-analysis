@@ -33,6 +33,7 @@ object FilmsAnalysis5 {
       .load()
 
     val streamingSelectDF = streamingInputDF
+      .where("status == \"Released\"")
       .withColumn("exploded", explode($"production_countries"))
       .select($"original_title", $"vote_average", $"exploded.name".alias("production_countries"))
       .groupBy("production_countries")

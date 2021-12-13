@@ -1,10 +1,12 @@
 import java.util.Properties
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{avg, count}
-import plotly.layout.{Annotation, Layout}
+import plotly.layout.{Annotation, Axis, Layout}
 import plotly.{Bar, Plotly}
+
 import java.text.DecimalFormat
 import plotly.element._
+
 import scala.io.Source
 
 object FilmsAnalysis1 {
@@ -32,6 +34,7 @@ object FilmsAnalysis1 {
       .load()
 
     val streamingSelectDF = streamingInputDF
+      .where("status == \"Released\"")
       .orderBy($"vote_average")
       .groupBy("original_language")
       .agg(count("original_language").as("count"),
@@ -65,6 +68,8 @@ object FilmsAnalysis1 {
       title = "Распределение оценок по языкам оригинала",
       annotations = annotations
     ).withHeight(600)
+      .withXaxis(Axis().withTitle("Язык оригинала"))
+      .withYaxis(Axis().withTitle("Средняя оценка"))
 
     Plotly.plot("./Docker/data/analysis_1_1.html", data1, layout)
 
@@ -84,6 +89,8 @@ object FilmsAnalysis1 {
       title = "Распределение количества фильмов по языкам оригинала",
       annotations = annotations1
     ).withHeight(600)
+      .withXaxis(Axis().withTitle("Язык оригинала"))
+      .withYaxis(Axis().withTitle("Количество фильмов"))
 
     Plotly.plot("./Docker/data/analysis_1_2.html", data2, layout1)
   }

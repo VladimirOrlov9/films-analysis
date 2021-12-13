@@ -33,6 +33,7 @@ object FilmsAnalysis3 {
       .load()
 
     val streamingSelectDF = streamingInputDF
+      .where("status == \"Released\"")
       .withColumn("exploded", explode($"genres"))
       .select($"original_title", $"popularity", $"exploded.name".alias("genres"))
       .groupBy("genres")
@@ -68,7 +69,7 @@ object FilmsAnalysis3 {
       .withYaxis(Axis(title = "Количество фильмов"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_3-1.html", data, layout)
+    Plotly.plot("./Docker/data/analysis_3_1.html", data, layout)
 
     val decForm = new DecimalFormat("#0.0")
 
@@ -100,6 +101,6 @@ object FilmsAnalysis3 {
       .withYaxis(Axis(title = "Средняя популярность"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_3-2.html", data1, layout1)
+    Plotly.plot("./Docker/data/analysis_3_2.html", data1, layout1)
   }
 }
