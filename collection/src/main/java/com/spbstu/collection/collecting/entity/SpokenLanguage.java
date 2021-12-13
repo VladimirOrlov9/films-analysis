@@ -7,15 +7,15 @@ import lombok.Data;
 @Data
 public class SpokenLanguage {
 
-    public String englishName;
-    public String iso6391;
+    public String english_name;
+    public String iso_639_1;
     public String name;
 
     @Override
     public String toString() {
         return "SpokenLanguage{" +
-                "englishName='" + englishName + '\'' +
-                ", iso6391='" + iso6391 + '\'' +
+                "englishName='" + english_name + '\'' +
+                ", iso6391='" + iso_639_1 + '\'' +
                 ", name='" + name + '\'' +
                 '}';
     }

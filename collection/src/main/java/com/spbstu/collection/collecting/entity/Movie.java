@@ -27,7 +27,7 @@ public class Movie {
     private String poster_path;
     private ProductionCompany[] production_companies;
     private ProductionCountry[] production_countries;
-    private String releaseDate;
+    private String release_date;
     private Long revenue;
     private Long runtime;
     private SpokenLanguage[] spoken_languages;
@@ -56,7 +56,7 @@ public class Movie {
                 ", posterPath='" + poster_path + '\'' +
                 ", productionCompanies=" + Arrays.toString(production_companies) +
                 ", productionCountries=" + Arrays.toString(production_countries) +
-                ", releaseDate='" + releaseDate + '\'' +
+                ", releaseDate='" + release_date + '\'' +
                 ", revenue=" + revenue +
                 ", runtime=" + runtime +
                 ", spokenLanguages=" + Arrays.toString(spoken_languages) +
