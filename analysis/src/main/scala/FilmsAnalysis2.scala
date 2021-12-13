@@ -45,7 +45,7 @@ object FilmsAnalysis2 {
     val decForm = new DecimalFormat("#0.0")
 
     val xValue = streamingSelectDF.select("year")
-      .map(f=>f.getInt(0).toString+"1-"+(f.getInt(0)+1).toString+"0").collect.toList
+      .map(f=>f.getInt(0).toString+"0-"+f.getInt(0).toString+"9").collect.toList
     val yValue = streamingSelectDF.select("count").map(f=>f.getLong(0)).collect.toList
     val yValue2 = streamingSelectDF.select("avg")
       .map(f=>decForm.format(f.getDouble(0)).replace(",", "."))
@@ -85,6 +85,7 @@ object FilmsAnalysis2 {
       .withBarmode(BarMode.Group)
       .withXaxis(Axis(tickangle = 90))
       .withYaxis(Axis().withShowticklabels(false))
+      .withHeight(600)
 
     Plotly.plot("./Docker/data/analysis_2.html", data1, layout)
 

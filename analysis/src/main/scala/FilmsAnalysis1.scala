@@ -64,7 +64,7 @@ object FilmsAnalysis1 {
     val layout = Layout(
       title = "Распределение оценок по языкам оригинала",
       annotations = annotations
-    )
+    ).withHeight(600)
 
     Plotly.plot("./Docker/data/analysis_1_1.html", data1, layout)
 
@@ -83,7 +83,7 @@ object FilmsAnalysis1 {
     val layout1 = Layout(
       title = "Распределение количества фильмов по языкам оригинала",
       annotations = annotations1
-    )
+    ).withHeight(600)
 
     Plotly.plot("./Docker/data/analysis_1_2.html", data2, layout1)
   }
