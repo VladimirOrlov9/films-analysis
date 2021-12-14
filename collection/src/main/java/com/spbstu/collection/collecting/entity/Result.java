@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,7 +15,7 @@ public class Result {
 
     public Boolean adult;
     public String backdropPath;
-    public List<Integer> genreIds;
+    public Integer[] genreIds;
     public Integer id;
     public String originalLanguage;
     public String originalTitle;
@@ -32,7 +33,7 @@ public class Result {
         return "Result{" +
                 "adult=" + adult +
                 ", backdropPath='" + backdropPath + '\'' +
-                ", genreIds=" + genreIds +
+                ", genreIds=" + Arrays.toString(genreIds) +
                 ", id=" + id +
                 ", originalLanguage='" + originalLanguage + '\'' +
                 ", originalTitle='" + originalTitle + '\'' +

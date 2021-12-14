@@ -9,16 +9,16 @@ public class BelongsToCollection {
 
     public Long id;
     public String name;
-    public String posterPath;
-    public String backdropPath;
+    public String poster_path;
+    public String backdrop_path;
 
     @Override
     public String toString() {
         return "BelongsToCollection{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
-                ", posterPath='" + posterPath + '\'' +
-                ", backdropPath='" + backdropPath + '\'' +
+                ", posterPath='" + poster_path + '\'' +
+                ", backdropPath='" + backdrop_path + '\'' +
                 '}';
     }
 }
