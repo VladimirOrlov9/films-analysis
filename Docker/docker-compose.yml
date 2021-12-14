@@ -232,3 +232,21 @@ services:
     volumes:
         - ./apps:/opt/spark-apps
         - ./data:/opt/spark-data
+
+  collection:
+    image: "collection"
+    container_name: collection
+    build:
+      context: .
+      dockerfile: Dockerfile-Spring
+    depends_on:
+      - mongo1
+      - spark-master
+      - spark-worker-a
+      - spark-worker-b
+      - shell
+      - kafkaserver
+    links:
+      - kafkaserver
+    networks:
+      - localnet

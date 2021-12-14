@@ -2,7 +2,7 @@
 
 java -version
 
-java -jar collector.jar
+java -jar collection.jar
 
 sleep 15
 
