@@ -159,6 +159,7 @@ services:
       - kafkaserver
       - connect
       - mongo1
+      - mongo1-setup
       - mongo-express
     networks:
       - localnet

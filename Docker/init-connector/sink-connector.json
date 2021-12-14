@@ -4,7 +4,7 @@
         "connector.class": "com.mongodb.kafka.connect.MongoSinkConnector",
         "tasks.max": "1",
         "topics": "data_test",
-        "connection.uri": "mongodb://mongo1:27017",
+        "connection.uri": "mongodb://mongo1:27017/?replicaSet=rs0",
         "database": "mydb",
         "collection": "data_test",
         "key.converter": "org.apache.kafka.connect.storage.StringConverter",
