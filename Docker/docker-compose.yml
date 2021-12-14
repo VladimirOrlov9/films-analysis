@@ -1,6 +1,7 @@
 version: '3.6'
 networks:
   localnet:
+    driver: bridge
     attachable: true
 
 services:
@@ -138,6 +139,7 @@ services:
     networks:
       - localnet
     depends_on:
+      - mongo1-setup
       - mongo1
     ports:
       - "8091:8081"
@@ -157,6 +159,7 @@ services:
       - kafkaserver
       - connect
       - mongo1
+      - mongo1-setup
       - mongo-express
     networks:
       - localnet
@@ -176,6 +179,7 @@ services:
     ports:
       - "8092:8080"
       - "7077:7077"
+      - "4040:4040"
     volumes:
        - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
@@ -192,7 +196,6 @@ services:
       - localnet
     ports:
       - "8093:8080"
-      - "7000:7000"
     depends_on:
       - spark-master
     environment:
@@ -216,7 +219,6 @@ services:
       - localnet
     ports:
       - "8094:8080"
-      - "7001:7000"
     depends_on:
       - spark-master
     environment:
@@ -230,3 +232,21 @@ services:
     volumes:
         - ./apps:/opt/spark-apps
         - ./data:/opt/spark-data
+
+  collection:
+    image: "collection"
+    container_name: collection
+    build:
+      context: .
+      dockerfile: Dockerfile-Spring
+    depends_on:
+      - mongo1
+      - spark-master
+      - spark-worker-a
+      - spark-worker-b
+      - shell
+      - kafkaserver
+    links:
+      - kafkaserver
+    networks:
+      - localnet
