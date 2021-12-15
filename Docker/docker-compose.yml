@@ -5,6 +5,7 @@ networks:
     attachable: true
 
 services:
+# ZooKeeper for store metadata of partitions, topics and brokers Apache Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:5.1.2
     hostname: zookeeper
@@ -17,6 +18,7 @@ services:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
 
+# Broker Apache Kafka
   kafkaserver:
     image: confluentinc/cp-enterprise-kafka:5.1.2
     hostname: kafkaserver
@@ -43,6 +45,7 @@ services:
       CONFLUENT_METRICS_ENABLE: 'true'
       CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
 
+# GUI for visualization Apache Kafka
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
@@ -59,6 +62,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafkaserver:29092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
 
+# MongoDB Kafka Connector for sink data Kafka->MongoDB
   connect:
     image: confluentinc/cp-kafka-connect:5.1.2
     hostname: connect
@@ -99,7 +103,7 @@ services:
     volumes:
       - ./kafka/jars:/usr/share/confluent-hub-components/kafka-connect-mongodb
 
-# MongoDB
+# MongoDB node
   mongo1:
     image: mongo
     container_name: mongo1
@@ -118,7 +122,7 @@ services:
     container_name: mongo1-setup
     build:
       context: .
-      dockerfile: Dockerfile-Mongo
+      dockerfile: Dockerfile-MongoSetup
     depends_on:
       - mongo1
     networks:
@@ -131,7 +135,7 @@ services:
       ]
     restart: "no"
 
-# MongoDB Express for GUI
+# MongoDB Express for GUI MongoDB
   mongo-express:
     image: mongo-express
     restart: unless-stopped
@@ -146,14 +150,14 @@ services:
     environment:
       ME_CONFIG_MONGODB_URL: "mongodb://mongo1:27017/?replicaSet=rs0"
 
-# MongoDB shell with curl
+# MongoDB shell for setup Connector with curl, kafkacat and mongosh
   shell:
     image: "mongo-shell"
     container_name: shell
     build:
       context: .
       dockerfile: Dockerfile-Shell
-    command: bash -c "./initialize-container.sh && tail -f /dev/null"
+    command: ["bash", "-c", "./initialize-container.sh && tail -f /dev/null"]
     depends_on:
       - zookeeper
       - kafkaserver
@@ -163,8 +167,13 @@ services:
       - mongo-express
     networks:
       - localnet
+    environment:
+      # Set Connector Host and Port
+      - CONNECTOR_HOST=connect
+      - CONNECTOR_PORT=8083
     restart: always
 
+# Apache Spark Master node
   spark-master:
     image: "cluster-apache-spark"
     container_name: spark-master
@@ -186,6 +195,8 @@ services:
     environment:
       - SPARK_LOCAL_IP=spark-master
       - SPARK_WORKLOAD=master
+
+# Apache Spark Worker-a node
   spark-worker-a:
     image: "cluster-apache-spark"
     container_name: spark-worker-a
@@ -209,6 +220,8 @@ services:
     volumes:
        - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
+
+# Apache Spark Worker-b node
   spark-worker-b:
     image: "cluster-apache-spark"
     container_name: spark-worker-b
@@ -233,6 +246,7 @@ services:
         - ./apps:/opt/spark-apps
         - ./data:/opt/spark-data
 
+# Container for Collection and Spark applications
   collection:
     image: "collection"
     container_name: collection
@@ -250,3 +264,6 @@ services:
       - kafkaserver
     networks:
       - localnet
+    environment:
+      # Configure Type of task (TASK_RUNNING = COLLECTION, SPARK, ALL - Collection & Spark)
+      - TASK_RUNNING=ALL

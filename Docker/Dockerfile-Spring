@@ -42,5 +42,6 @@ ln -sf /dev/stdout $SPARK_WORKER_LOG
 
 COPY ./init-spring/collection.jar /opt/spark/
 COPY ./init-spring/start-spring.sh /
+RUN chmod +x /start-spring.sh
 
 CMD ["/bin/bash", "/start-spring.sh"]
