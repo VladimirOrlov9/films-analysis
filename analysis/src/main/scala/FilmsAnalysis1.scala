@@ -29,28 +29,35 @@ object FilmsAnalysis1 {
     spark.sparkContext.setLogLevel("ERROR")
     import spark.implicits._
 
-    val streamingInputDF = spark.read.format("mongo")
+    val inputDF = spark.read.format("mongo")
       .option("startingOffsets", "earliest")
       .load()
+      .where("status == \"Released\"")
+      .distinct()
+//      .where("budget > 0")
+//      .where("vote_average > 0")
 
     var startTime = System.currentTimeMillis()
 
-    var streamingSelectDF = streamingInputDF
+    var selectDF = inputDF
       .where("status == \"Released\"")
+      .where("vote_average > 0")
       .orderBy($"vote_average")
       .groupBy("original_language")
       .agg(count("original_language").as("count"),
         avg("vote_average").as("avg"))
+      .where("count > 1000")
       .orderBy("avg")
+
 
     val decForm = new DecimalFormat("#0.0")
 
-    var xValue = streamingSelectDF.select("original_language").map(f=>f.getString(0)).collect.toList
-    var yValue = streamingSelectDF.select("avg").map(f=>decForm.format(f.getDouble(0)).replace(",", ".")).collect.toList
-    var yValue2 = streamingSelectDF.select("count").map(f=>f.getLong(0)).collect.toList
+    var xValue = selectDF.select("original_language").map(f=>f.getString(0)).collect.toList
+    var yValue = selectDF.select("avg").map(f=>decForm.format(f.getDouble(0)).replace(",", ".")).collect.toList
+
 
     var data1 = Seq(Bar(xValue, yValue))
-    var data2 = Seq(Bar(xValue, yValue2))
+
 
     var annotations = xValue.zip(yValue).map {
       case (x, y) =>
@@ -73,6 +80,11 @@ object FilmsAnalysis1 {
 
     Plotly.plot("./Docker/data/analysis_1_1.html", data1, layout)
 
+    xValue = selectDF.orderBy("count").select("original_language").map(f=>f.getString(0)).collect.toList
+    var yValue2 = selectDF.orderBy("count").select("count").map(f=>f.getLong(0)).collect.toList
+
+    var data2 = Seq(Bar(xValue, yValue2))
+
     var annotations1 = xValue.zip(yValue2).map {
       case (x, y) =>
         Annotation(
@@ -92,7 +104,7 @@ object FilmsAnalysis1 {
       .withXaxis(Axis().withTitle("Язык оригинала"))
       .withYaxis(Axis().withTitle("Количество фильмов"))
 
-    Plotly.plot("./Docker/data/analysis_1_2.html", data2, layout1)
+    Plotly.plot("/opt/spark-data/analysis_1_2.html", data2, layout1)
 
     var endTime = System.currentTimeMillis()
     System.out.print("Распределение оценок и количества фильмов по языкам оригинала: " + ((endTime-startTime).toDouble/1000) + " seconds \n")
@@ -100,7 +112,7 @@ object FilmsAnalysis1 {
 
     //--------------- 2 task ------------
 
-    streamingSelectDF = streamingInputDF
+    selectDF = inputDF
       .where("status == \"Released\"")
       .selectExpr("*", "cast(left(release_date, 3) as int) as year")
       .groupBy("year")
@@ -111,34 +123,23 @@ object FilmsAnalysis1 {
       .orderBy("year")
 
 
-    xValue = streamingSelectDF.select("year")
+    xValue = selectDF.select("year")
       .map(f=>f.getInt(0).toString+"0-"+f.getInt(0).toString+"9").collect.toList
-    var yValueString = streamingSelectDF.select("count").map(f=>f.getLong(0)).collect.toList
-    var yValue2String = streamingSelectDF.select("avg")
-      .map(f=>decForm.format(f.getDouble(0)).replace(",", "."))
-      .collect.toList
+    var yValueString = selectDF.select("count").map(f=>f.getLong(0)).collect.toList
+//    var yValue2String = selectDF.select("avg")
+//      .map(f=>decForm.format(f.getDouble(0)).replace(",", "."))
+//      .collect.toList
 
-    var yValueNew = yValueString.map{f => f.toDouble/500}
+//    var yValueNew = yValueString.map{f => f.toDouble/250}
 
-    data1 = Seq(Bar(xValue, yValueNew, name = "Количество фильмов"),
-      Bar(xValue, yValue2String, "Средняя оценка"))
+    data1 = Seq(Bar(xValue, yValueString))
 
-    annotations = xValue.zip(yValue2String).map {
+    annotations = xValue.zip(yValueString).map {
       case (x, y) =>
         Annotation(
           x = x,
           y = y,
           text = y.toString,
-          xanchor = Anchor.Left,
-          yanchor = Anchor.Bottom,
-          showarrow = false
-        )
-    }++ xValue.zip(yValueNew).map {
-      case (x, y) =>
-        Annotation(
-          x = x,
-          y = y,
-          text = (y*500).toLong.toString,
           xanchor = Anchor.Right,
           yanchor = Anchor.Bottom,
           showarrow = false
@@ -146,34 +147,36 @@ object FilmsAnalysis1 {
     }
 
     layout = Layout()
-      .withTitle("Средняя оценка фильмов и их количество по годам выпуска")
+      .withTitle("Средняя количество фильмов по годам выпуска")
       .withAnnotations(annotations)
       .withBarmode(BarMode.Group)
       .withXaxis(Axis(tickangle = 45).withTitle("Год выпуска"))
-      .withYaxis(Axis().withShowticklabels(false))
+      .withYaxis(Axis().withShowticklabels(false).withTitle("Количество фильмов"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_2.html", data1, layout)
+    Plotly.plot("/opt/spark-data/analysis_2.html", data1, layout)
 
     endTime = System.currentTimeMillis()
-    System.out.print("Средняя оценка фильмов и их количество по годам выпуска: " + ((endTime-startTime).toDouble/1000) + " seconds\n")
+    System.out.print("Средняя количество фильмов по годам выпуска: " + ((endTime-startTime).toDouble/1000) + " seconds\n")
     startTime = System.currentTimeMillis()
 
     //---------------- 3 task ---------------
 
-    streamingSelectDF = streamingInputDF
+    selectDF = inputDF
       .where("status == \"Released\"")
+      .where("popularity > 0")
       .withColumn("exploded", explode($"genres"))
       .select($"original_title", $"popularity", $"exploded.name".alias("genres"))
       .groupBy("genres")
       .agg(count("genres").as("count"),
         avg("popularity").as("avg"))
       .orderBy("count")
+
     //      .show()
 
-    xValue = streamingSelectDF.select("genres")
+    xValue = selectDF.select("genres")
       .map(f=>f.getString(0)).collect.toList
-    var yValueLong = streamingSelectDF
+    var yValueLong = selectDF
       .select("count").map(f=>f.getLong(0)).collect.toList
 
 
@@ -198,9 +201,9 @@ object FilmsAnalysis1 {
       .withYaxis(Axis(title = "Количество фильмов"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_3_1.html", data, layout)
+    Plotly.plot("/opt/spark-data/analysis_3_1.html", data, layout)
 
-    var orderedDF = streamingSelectDF.orderBy($"avg")
+    var orderedDF = selectDF.orderBy($"avg")
     var xValue1 = orderedDF.select("genres")
       .map(f=>f.getString(0)).collect.toList
     var yValue1 = orderedDF
@@ -228,7 +231,7 @@ object FilmsAnalysis1 {
       .withYaxis(Axis(title = "Средняя популярность"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_3_2.html", data1, layout1)
+    Plotly.plot("/opt/spark-data/analysis_3_2.html", data1, layout1)
 
     endTime = System.currentTimeMillis()
     System.out.print("Разброс и популярность фильмов по жанрам: " + ((endTime-startTime).toDouble/1000) + " seconds\n")
@@ -236,16 +239,19 @@ object FilmsAnalysis1 {
 
     //----------------4 task-------------------
 
-    streamingSelectDF = streamingInputDF
+    selectDF = inputDF
       .where("status == \"Released\"")
+      .where("budget > 0")
       .withColumn("count", size($"spoken_languages"))
       .groupBy("count")
       .agg(avg("budget").as("avg"))
+      .where("0 < count")
       .orderBy("count")
 
-    var xValueInt = streamingSelectDF.select("count")
+
+    var xValueInt = selectDF.select("count")
       .map(f=>f.getInt(0)).collect.toList
-    yValue = streamingSelectDF
+    yValue = selectDF
       .select("avg")
       .map(f=> decForm.format(f.getDouble(0)/1000000).replace(",", "."))
       .collect
@@ -275,7 +281,7 @@ object FilmsAnalysis1 {
         title = "Средний бюджет (млн $)"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_4_1.html", data, layout)
+    Plotly.plot("/opt/spark-data/analysis_4.html", data, layout)
 
     endTime = System.currentTimeMillis()
     System.out.print("Средний бюджет фильмов, в зависимости от количества языков, на которые он переведен: "
@@ -284,10 +290,11 @@ object FilmsAnalysis1 {
 
     //----------------5 task-------------------
 
-    streamingSelectDF = streamingInputDF
+    selectDF = inputDF
       .where("status == \"Released\"")
       .withColumn("exploded", explode($"production_countries"))
-      .select($"original_title", $"vote_average", $"exploded.name".alias("production_countries"))
+      .select($"original_title", $"vote_average",
+        $"exploded.name".alias("production_countries"))
       .groupBy("production_countries")
       .agg(count($"production_countries").as("count"),
         avg("vote_average").as("avg"))
@@ -295,74 +302,59 @@ object FilmsAnalysis1 {
       .limit(10)
       .orderBy($"count")
 
-    xValue = streamingSelectDF.select("production_countries")
+    xValue = selectDF.select("production_countries")
       .map(f=>f.getString(0)).collect.toList
-    yValueLong = streamingSelectDF
+    yValueLong = selectDF
       .select("count")
       .map(f=> f.getLong(0))
       .collect
       .toList
-    yValue2String = streamingSelectDF
-      .select("avg")
-      .map(f=> decForm.format(f.getDouble(0)).replace(",", "."))
-      .collect
-      .toList
 
-    var yValue1New = yValueLong.map{f => f.toDouble/1000}
 
-    data = Seq(Bar(xValue, yValue2String, "Средняя оценка"),
-      Bar(xValue, yValue1New, "Количество фильмов"))
+    data = Seq(Bar(xValue, yValueLong))
 
-    annotations = xValue.zip(yValue1New).map {
-      case (x, y) =>
-        Annotation(
-          x = x,
-          y = y,
-          text = (y*1000).toLong.toString,
-          xanchor = Anchor.Left,
-          yanchor = Anchor.Bottom,
-          showarrow = false
-        )
-    }++ xValue.zip(yValue2String).map {
+    annotations = xValue.zip(yValueLong).map {
       case (x, y) =>
         Annotation(
           x = x,
           y = y,
           text = y.toString,
-          xanchor = Anchor.Right,
+          xanchor = Anchor.Left,
           yanchor = Anchor.Bottom,
           showarrow = false
         )
     }
 
     layout = Layout()
-      .withTitle("Количество выпущенных фильмов и их средняя оценка по странам производства")
+      .withTitle("Количество выпущенных фильмов по странам производства")
       .withAnnotations(annotations)
       .withXaxis(Axis(tickmode = TickMode.Array, showticklabels = true,
         title = "Топ-10 стран производителей"))
-      .withYaxis(Axis(tickmode = TickMode.Array, showticklabels = false))
+      .withYaxis(Axis(tickmode = TickMode.Array, showticklabels = false,
+        title = "Количество фильмов"))
       .withHeight(600)
       .withBarmode(BarMode.Group)
 
-    Plotly.plot("./Docker/data/analysis_5.html", data, layout)
+    Plotly.plot("/opt/spark-data/analysis_5.html", data, layout)
 
     endTime = System.currentTimeMillis()
-    System.out.print("Количество выпущенных фильмов и их средняя оценка по странам производства: "
+    System.out.print("Количество выпущенных фильмов по странам производства: "
       + ((endTime-startTime).toDouble/1000) + " seconds\n")
     startTime = System.currentTimeMillis()
 
     //----------------6 task-------------------
 
-    streamingSelectDF = streamingInputDF
+    selectDF = inputDF
       .where("status == \"Released\"")
+      .where("vote_average > 0")
+      .where("popularity > 0")
       .selectExpr("*", "cast(left(vote_average, 1) as int) as vote_int")
       .groupBy("vote_int")
       .agg(avg("popularity").as("avg"))
-      //      .where("count != 0")
       .select("vote_int", "avg")
       .orderBy("vote_int")
 
-    xValue = streamingSelectDF.select("vote_int")
+    xValue = selectDF.select("vote_int")
       .map(f=>f.getInt(0).toString+".*").collect.toList.map{y =>
       if (y.equals("0.*")) {
         "0"
@@ -371,7 +363,7 @@ object FilmsAnalysis1 {
       }
     }
 
-    yValue = streamingSelectDF.select("avg")
+    yValue = selectDF.select("avg")
       .map(f=>decForm.format(f.getDouble(0)).replace(",", "."))
       .collect.toList
 
@@ -380,16 +372,14 @@ object FilmsAnalysis1 {
 
     annotations = xValue.zip(yValue).map {
       case (x, y) =>
-        Annotation(
-          x = x,
-          y = y,
-          text = y,
-          xanchor = Anchor.Middle,
-          yanchor = Anchor.Bottom,
-          showarrow = false
-        )
+        Annotation()
+          .withX(x)
+          .withY(y)
+          .withText(y)
+          .withXanchor(Anchor.Middle)
+          .withYanchor(Anchor.Bottom)
+          .withShowarrow(false)
     }
-
 
     layout = Layout()
       .withTitle("Средняя популярность фильмов в зависимости от оценки")
@@ -399,61 +389,10 @@ object FilmsAnalysis1 {
       .withYaxis(Axis().withTitle("Средняя популярность"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_6.html", data1, layout)
+    Plotly.plot("/opt/spark-data/analysis_6.html", data1, layout)
 
     endTime = System.currentTimeMillis()
     System.out.print("Средняя популярность фильмов в зависимости от оценки: "
       + ((endTime-startTime).toDouble/1000) + " seconds\n")
-    startTime = System.currentTimeMillis()
-
-    //----------------7 task-------------------
-
-    streamingSelectDF = streamingInputDF
-      .where("status == \"Released\"")
-      .selectExpr("*", "cast(left(vote_average, 1) as int) as vote_int")
-      .selectExpr("*", "(100 - (revenue/budget) * 100 * (-1)) as f1")
-      .groupBy("vote_int")
-      .agg(sum("popularity").as("sum"), count("vote_int").as("count"))
-      .withColumn("res", $"sum" / $"count")
-      .orderBy("vote_int")
-
-    xValue = streamingSelectDF.select("vote_int")
-      .map(f=>f.getInt(0).toString+".*").collect.toList.map{y =>
-      if (y.equals("0.*")) {
-        "0"
-      } else {
-        y
-      }
-    }
-
-    yValue = streamingSelectDF.select("res")
-      .map(f=>decForm.format(f.getDouble(0)).replace(",", "."))
-      .collect.toList
-
-
-    data1 = Seq(Bar(xValue, yValue))
-
-    annotations = xValue.zip(yValue).map {
-      case (x, y) =>
-        Annotation(
-          x = x,
-          y = y,
-          text = y,
-          xanchor = Anchor.Middle,
-          yanchor = Anchor.Bottom,
-          showarrow = false
-        )
-    }
-
-
-    layout = Layout()
-      .withTitle("Зависимость окупаемости фильма от его оценки")
-      .withAnnotations(annotations)
-      .withBarmode(BarMode.Group)
-      .withXaxis(Axis().withTitle("Оценка"))
-      .withYaxis(Axis().withTitle("Окупаемость (%)"))
-      .withHeight(600)
-
-    Plotly.plot("./Docker/data/analysis_7.html", data1, layout)
   }
 }
