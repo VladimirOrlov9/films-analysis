@@ -95,7 +95,6 @@ services:
       CONNECT_LOG4J_LOGGERS: "org.apache.kafka.connect.runtime.rest=WARN,org.reflections=ERROR,com.mongodb.kafka=DEBUG"
       CONNECT_PLUGIN_PATH: /usr/share/confluent-hub-components
       CONNECT_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      # Assumes image is based on confluentinc/kafka-connect-datagen:latest which is pulling 5.2.2 Connect image
       CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-5.2.2.jar
       CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
       CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
@@ -247,9 +246,9 @@ services:
         - ./data:/opt/spark-data
 
 # Container for Collection and Spark applications
-  collection:
-    image: "collection"
-    container_name: collection
+  spring:
+    image: "spring"
+    container_name: spring
     build:
       context: .
       dockerfile: Dockerfile-Spring
@@ -262,8 +261,11 @@ services:
       - kafkaserver
     links:
       - kafkaserver
+      - mongo1
+      - spark-master
     networks:
       - localnet
     environment:
-      # Configure Type of task (TASK_RUNNING = COLLECTION, SPARK, ALL - Collection & Spark)
+      # Configure Type of task
+      # TASK_RUNNING = COLLECTION or SPARK or ALL - Collection & Spark
       - TASK_RUNNING=ALL

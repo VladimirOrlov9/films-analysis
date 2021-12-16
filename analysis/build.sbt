@@ -20,3 +20,9 @@ libraryDependencies ++= Seq(
 
 dependencyOverrides += "org.json4s" %% "json4s-ast" % "3.5.3"
 dependencyOverrides += "org.json4s" %% "json4s-native" % "3.5.3"
+
+ThisBuild / assemblyMergeStrategy := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}
+assembly / assemblyJarName := "FilmsAnalysis1.jar"

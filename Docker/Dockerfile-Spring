@@ -17,6 +17,8 @@ RUN wget --no-verbose -O apache-spark.tgz "https://archive.apache.org/dist/spark
 && tar -xf apache-spark.tgz -C /opt/spark --strip-components=1 \
 && rm apache-spark.tgz
 
+RUN wget --no-verbose -O /opt/spark/jars/mongo-spark-connector_2.12-3.0.1.jar https://search.maven.org/remotecontent?filepath=org/mongodb/spark/mongo-spark-connector_2.12/3.0.1/mongo-spark-connector_2.12-3.0.1.jar
+
 FROM builder as apache-spark
 
 WORKDIR /opt/spark
@@ -40,7 +42,7 @@ touch $SPARK_WORKER_LOG && \
 ln -sf /dev/stdout $SPARK_MASTER_LOG && \
 ln -sf /dev/stdout $SPARK_WORKER_LOG
 
-COPY ./init-spring/collection.jar /opt/spark/
+COPY ./init-spring/collection.jar ./init-spring/spark-job.jar /opt/spark/
 COPY ./init-spring/start-spring.sh /
 RUN chmod +x /start-spring.sh
 

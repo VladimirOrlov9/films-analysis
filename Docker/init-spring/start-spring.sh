@@ -6,7 +6,8 @@ function start_Collection {
 }
 
 function start_Spark {
-  echo "TODO: start Spark app..."
+  java -version
+  java -jar spark-job.jar
 }
 
 echo "Type of running is $TASK_RUNNING"
@@ -17,11 +18,13 @@ COLLECTION)
   start_Collection;;
 SPARK)
   echo "----------Step 1/1: Start Spark Application----------"
+  sleep 40
   start_Spark;;
 ALL)
+  sleep 30
   echo "----------Step 1/2: Start Collection Application----------"
   start_Collection
-  sleep 15
+  sleep 30
   echo "----------Step 2/2: Start Spark Application----------"
   start_Spark;;
 *) echo "Error: $TASK_RUNNING is not an option"

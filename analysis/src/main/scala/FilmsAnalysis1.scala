@@ -21,17 +21,21 @@ object FilmsAnalysis1 {
     val spark: SparkSession = SparkSession.builder
       .master(properties.getProperty("spark.master"))
       .appName(properties.getProperty("spark.appName"))
+      .config("spark.submit.deployMode",properties.getProperty("spark.deployMode"))
+      .config("spark.jars.packages", "org.mongodb.spark:mongo-spark-connector_2.12:3.0.1")
       .config("spark.mongodb.input.uri", properties.getProperty("mongodb.url"))
       .config("spark.mongodb.input.database", properties.getProperty("mongodb.databaseName"))
       .config("spark.mongodb.input.collection", properties.getProperty("mongodb.collectionName"))
       .getOrCreate()
 
     spark.sparkContext.setLogLevel("ERROR")
-    import spark.implicits._
 
-    val streamingInputDF = spark.read.format("mongo")
-      .option("startingOffsets", "earliest")
-      .load()
+    import spark.implicits._
+    import com.mongodb.spark._
+    import com.mongodb.spark.config._
+    import org.bson.Document
+
+    val streamingInputDF = MongoSpark.load(spark)
 
     var startTime = System.currentTimeMillis()
 
@@ -71,7 +75,7 @@ object FilmsAnalysis1 {
       .withXaxis(Axis().withTitle("Язык оригинала"))
       .withYaxis(Axis().withTitle("Средняя оценка"))
 
-    Plotly.plot("./Docker/data/analysis_1_1.html", data1, layout)
+    Plotly.plot("/opt/spark-data/analysis_1_1.html", data1, layout)
 
     var annotations1 = xValue.zip(yValue2).map {
       case (x, y) =>
@@ -92,7 +96,7 @@ object FilmsAnalysis1 {
       .withXaxis(Axis().withTitle("Язык оригинала"))
       .withYaxis(Axis().withTitle("Количество фильмов"))
 
-    Plotly.plot("./Docker/data/analysis_1_2.html", data2, layout1)
+    Plotly.plot("/opt/spark-data/analysis_1_2.html", data2, layout1)
 
     var endTime = System.currentTimeMillis()
     System.out.print("Распределение оценок и количества фильмов по языкам оригинала: " + ((endTime-startTime).toDouble/1000) + " seconds \n")
@@ -153,7 +157,7 @@ object FilmsAnalysis1 {
       .withYaxis(Axis().withShowticklabels(false))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_2.html", data1, layout)
+    Plotly.plot("/opt/spark-data/analysis_2.html", data1, layout)
 
     endTime = System.currentTimeMillis()
     System.out.print("Средняя оценка фильмов и их количество по годам выпуска: " + ((endTime-startTime).toDouble/1000) + " seconds\n")
@@ -198,7 +202,7 @@ object FilmsAnalysis1 {
       .withYaxis(Axis(title = "Количество фильмов"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_3_1.html", data, layout)
+    Plotly.plot("/opt/spark-data/analysis_3_1.html", data, layout)
 
     var orderedDF = streamingSelectDF.orderBy($"avg")
     var xValue1 = orderedDF.select("genres")
@@ -228,7 +232,7 @@ object FilmsAnalysis1 {
       .withYaxis(Axis(title = "Средняя популярность"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_3_2.html", data1, layout1)
+    Plotly.plot("/opt/spark-data/analysis_3_2.html", data1, layout1)
 
     endTime = System.currentTimeMillis()
     System.out.print("Разброс и популярность фильмов по жанрам: " + ((endTime-startTime).toDouble/1000) + " seconds\n")
@@ -275,7 +279,7 @@ object FilmsAnalysis1 {
         title = "Средний бюджет (млн $)"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_4_1.html", data, layout)
+    Plotly.plot("/opt/spark-data/analysis_4_1.html", data, layout)
 
     endTime = System.currentTimeMillis()
     System.out.print("Средний бюджет фильмов, в зависимости от количества языков, на которые он переведен: "
@@ -344,7 +348,7 @@ object FilmsAnalysis1 {
       .withHeight(600)
       .withBarmode(BarMode.Group)
 
-    Plotly.plot("./Docker/data/analysis_5.html", data, layout)
+    Plotly.plot("/opt/spark-data/analysis_5.html", data, layout)
 
     endTime = System.currentTimeMillis()
     System.out.print("Количество выпущенных фильмов и их средняя оценка по странам производства: "
@@ -399,7 +403,7 @@ object FilmsAnalysis1 {
       .withYaxis(Axis().withTitle("Средняя популярность"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_6.html", data1, layout)
+    Plotly.plot("/opt/spark-data/analysis_6.html", data1, layout)
 
     endTime = System.currentTimeMillis()
     System.out.print("Средняя популярность фильмов в зависимости от оценки: "
@@ -454,6 +458,6 @@ object FilmsAnalysis1 {
       .withYaxis(Axis().withTitle("Окупаемость (%)"))
       .withHeight(600)
 
-    Plotly.plot("./Docker/data/analysis_7.html", data1, layout)
+    Plotly.plot("/opt/spark-data/analysis_7.html", data1, layout)
   }
 }
