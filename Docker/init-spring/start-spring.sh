@@ -6,8 +6,7 @@ function start_Collection {
 }
 
 function start_Spark {
-  java -version
-  java -jar spark-job.jar
+  ./bin/spark-submit --class FilmsAnalysis1 --master spark://spark-master:7077 --deploy-mode client spark-job.jar
 }
 
 echo "Type of running is $TASK_RUNNING"
@@ -18,7 +17,9 @@ COLLECTION)
   start_Collection;;
 SPARK)
   echo "----------Step 1/1: Start Spark Application----------"
+  echo "Waiting for start..."
   sleep 40
+  echo "Start..."
   start_Spark;;
 ALL)
   sleep 30
@@ -28,6 +29,6 @@ ALL)
   echo "----------Step 2/2: Start Spark Application----------"
   start_Spark;;
 *) echo "Error: $TASK_RUNNING is not an option"
-  echo "(Use 'COLLECTION' for Collection, 'SPARK' for Spark Application, 'ALL' for All Steps)" ;;
+  echo "(Use ENV variable TASK_RUNNING as 'COLLECTION' for Collection, 'SPARK' for Spark Application, 'ALL' for All Steps)" ;;
 esac
 

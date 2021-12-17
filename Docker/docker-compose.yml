@@ -149,7 +149,7 @@ services:
     environment:
       ME_CONFIG_MONGODB_URL: "mongodb://mongo1:27017/?replicaSet=rs0"
 
-# MongoDB shell for setup Connector with curl, kafkacat and mongosh
+# MongoDB shell for setup Connector. With curl, kafkacat and mongosh
   shell:
     image: "mongo-shell"
     container_name: shell
@@ -188,7 +188,6 @@ services:
       - "8092:8080"
       - "7077:7077"
     volumes:
-       - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
     environment:
       - SPARK_LOCAL_IP=spark-master
@@ -216,7 +215,6 @@ services:
       - SPARK_WORKLOAD=worker
       - SPARK_LOCAL_IP=spark-worker-a
     volumes:
-       - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
 
 # Apache Spark Worker-b node
@@ -241,7 +239,6 @@ services:
       - SPARK_WORKLOAD=worker
       - SPARK_LOCAL_IP=spark-worker-b
     volumes:
-        - ./apps:/opt/spark-apps
         - ./data:/opt/spark-data
 
 # Container for Collection and Spark applications
@@ -262,14 +259,13 @@ services:
       - kafkaserver
       - mongo1
       - spark-master
-    ports:
-      - "4040:4040"
     networks:
       - localnet
+    ports:
+      - "4040:4040"
     environment:
       # Configure Type of task
-      # TASK_RUNNING = COLLECTION or SPARK or ALL - Collection & Spark
+      # TASK_RUNNING = COLLECTION or SPARK or ALL (Collection then Spark)
       - TASK_RUNNING=SPARK
     volumes:
-       - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
