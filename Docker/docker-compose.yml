@@ -187,7 +187,6 @@ services:
     ports:
       - "8092:8080"
       - "7077:7077"
-      - "4040:4040"
     volumes:
        - ./apps:/opt/spark-apps
        - ./data:/opt/spark-data
@@ -263,9 +262,14 @@ services:
       - kafkaserver
       - mongo1
       - spark-master
+    ports:
+      - "4040:4040"
     networks:
       - localnet
     environment:
       # Configure Type of task
       # TASK_RUNNING = COLLECTION or SPARK or ALL - Collection & Spark
-      - TASK_RUNNING=ALL
+      - TASK_RUNNING=SPARK
+    volumes:
+       - ./apps:/opt/spark-apps
+       - ./data:/opt/spark-data
