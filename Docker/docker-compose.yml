@@ -71,6 +71,7 @@ services:
     depends_on:
       - zookeeper
       - kafkaserver
+      - mongo1
     ports:
       - "8083:8083"
     networks:
@@ -98,7 +99,7 @@ services:
       CLASSPATH: /usr/share/java/monitoring-interceptors/monitoring-interceptors-5.2.2.jar
       CONNECT_PRODUCER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringProducerInterceptor"
       CONNECT_CONSUMER_INTERCEPTOR_CLASSES: "io.confluent.monitoring.clients.interceptor.MonitoringConsumerInterceptor"
-    command: "bash -c 'if [ ! -d /usr/share/confluent-hub-components/confluentinc-kafka-connect-datagen ]; then echo \"WARNING: Did not find directory for kafka-connect-datagen (did you remember to run: docker-compose up -d --build ?)\"; fi ; /etc/confluent/docker/run'"
+    command: ["bash", "-c", "/etc/confluent/docker/run"]
     volumes:
       - ./kafka/jars:/usr/share/confluent-hub-components/kafka-connect-mongodb
 
@@ -107,8 +108,6 @@ services:
     image: mongo
     container_name: mongo1
     command: --replSet rs0
-    depends_on:
-      - connect
     networks:
       - localnet
     ports:
@@ -130,7 +129,7 @@ services:
       [
         "bash",
         "-c",
-        "sleep 10 && mongo --host mongodb://mongo1:27017 config-replica.js && sleep 10 && mongo --host mongodb://mongo1:27017 config-data.js",
+        "sleep 15 && mongo --host mongodb://mongo1:27017 config-replica.js && sleep 10 && mongo --host mongodb://mongo1:27017 config-data.js",
       ]
     restart: "no"
 
@@ -163,7 +162,6 @@ services:
       - connect
       - mongo1
       - mongo1-setup
-      - mongo-express
     networks:
       - localnet
     environment:
@@ -255,10 +253,7 @@ services:
       - spark-worker-b
       - shell
       - kafkaserver
-    links:
-      - kafkaserver
-      - mongo1
-      - spark-master
+      - connect
     networks:
       - localnet
     ports:
@@ -266,6 +261,12 @@ services:
     environment:
       # Configure Type of task
       # TASK_RUNNING = COLLECTION or SPARK or ALL (Collection then Spark)
-      - TASK_RUNNING=SPARK
+      - TASK_RUNNING=ALL
+      # Select Type of collection
+      # COLLECTION_TYPE = DEMO (small collection) or FULL (full collection)
+      - COLLECTION_TYPE=FULL
+      # URL Spark-master node
+      # Default = spark://spark-master:7077
+      - SPARK_MASTER=spark://spark-master:7077
     volumes:
        - ./data:/opt/spark-data

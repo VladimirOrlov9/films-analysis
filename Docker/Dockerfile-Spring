@@ -40,7 +40,7 @@ touch $SPARK_WORKER_LOG && \
 ln -sf /dev/stdout $SPARK_MASTER_LOG && \
 ln -sf /dev/stdout $SPARK_WORKER_LOG
 
-COPY ./init-spring/collection.jar ./init-spring/spark-job.jar /opt/spark/
+COPY ./init-spring/collection-demo.jar ./init-spring/collection-full.jar ./init-spring/spark-job.jar /opt/spark/
 COPY ./init-spring/start-spring.sh /
 RUN chmod +x /start-spring.sh
 

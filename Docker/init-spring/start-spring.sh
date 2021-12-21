@@ -2,11 +2,26 @@
 
 function start_Collection {
   java -version
-  java -jar collection.jar
+
+  case $COLLECTION_TYPE in
+  DEMO)
+    echo "----------Start Demo Collection----------"
+    java -jar collection-demo.jar &
+    pid=$!
+    wait $pid;;
+  FULL)
+    echo "----------Start Full Collection----------"
+    java -jar collection-full.jar &
+    pid=$!
+    wait $pid;;
+  *) echo "Error: $COLLECTION_TYPE is not an option"
+  echo "(Use ENV variable COLLECTION_TYPE as 'DEMO' for Demo Collection, 'FULL' for Full Collection)" ;;
+esac
+
 }
 
 function start_Spark {
-  ./bin/spark-submit --class FilmsAnalysis1 --master spark://spark-master:7077 --deploy-mode client spark-job.jar
+  ./bin/spark-submit --class FilmsAnalysis1 --master $SPARK_MASTER --deploy-mode client spark-job.jar
 }
 
 echo "Type of running is $TASK_RUNNING"
